@@ -24,23 +24,20 @@ export async function setupNotifications() {
     });
   }
   const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== "granted") {
+  if (status!== "granted") {
     Alert.alert("ต้องเปิดสิทธิ์แจ้งเตือน", "ไปที่ Settings > Apps > Notifications");
   }
 }
 
-// ทุกเดือน: ระบบไม่มี trigger รายเดือน จึงตั้งล่วงหน้า 12 เดือน
-// (ถ้าวันที่เกินจำนวนวันของเดือน เช่น 31 จะใช้วันสุดท้ายของเดือนนั้น)
 function monthlyDates(t: Todo, count = 12): Date[] {
   const now = new Date();
   const out: Date[] = [];
-  for (let i = 0; out.length < count; i++) {
-    const first = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-    const d = new Date(
-      first.getFullYear(), first.getMonth(), Math.min(t.monthDay, last), t.hour, t.minute, 0, 0
-    );
-    if (d.getTime() > now.getTime()) out.push(d);
+  for (let i=0; out.length < count; i++) {
+    const first = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    const last = new Date(first.getFullYear(), first.getMonth()+1, 0).getDate();
+    const day = t.monthDay===99 ? last : Math.min(t.monthDay, last);
+    const d = new Date(first.getFullYear(), first.getMonth(), day, t.hour, t.minute, 0,0);
+    if(d.getTime() > now.getTime()) out.push(d);
   }
   return out;
 }
@@ -71,11 +68,19 @@ export async function schedule(t: Todo): Promise<string[]> {
         content,
         trigger: { type: T.DAILY, hour: t.hour, minute: t.minute, channelId: CH },
       })];
-    case "weekly":
-      return [await Notifications.scheduleNotificationAsync({
-        content,
-        trigger: { type: T.WEEKLY, weekday: t.weekday, hour: t.hour, minute: t.minute, channelId: CH },
-      })];
+    case "weekly": {
+      // รองรับทั้งของเก่า (weekday) และของใหม่ (weekdays)
+      const days = t.weekdays?.length? t.weekdays : [t.weekday];
+      const ids: string[] = [];
+      for (const wd of days) {
+        const id = await Notifications.scheduleNotificationAsync({
+          content,
+          trigger: { type: T.WEEKLY, weekday: wd, hour: t.hour, minute: t.minute, channelId: CH },
+        });
+        ids.push(id);
+      }
+      return ids;
+    }
     case "monthly":
       return Promise.all(
         monthlyDates(t).map((date) =>

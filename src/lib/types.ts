@@ -12,6 +12,7 @@ export type Todo = {
   hour: number;       // ใช้กับ ทุกวัน / ทุกสัปดาห์ / ทุกเดือน
   minute: number;
   weekday: number;    // 1=อา ... 7=ส (ทุกสัปดาห์)
+  weekdays: number[]; // ใช้ใหม่ ติ๊กได้หลายวัน
   monthDay: number;   // 1-31 (ทุกเดือน)
   done: boolean;
   doneAt: string | null;
