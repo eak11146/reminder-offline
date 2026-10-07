@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Reminder Offline",
-    "slug": "reminder-nw",
+    "name": "Reminder Ek",
+    "slug": "reminder-ek",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "transparent"
     },
     "ios": { "supportsTablet": true },
     "android": {

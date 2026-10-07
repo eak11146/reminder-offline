@@ -7,6 +7,9 @@ export default function DonateModal({ visible, onClose }: { visible: boolean; on
       <View className="flex-1 items-center justify-center bg-black/60 p-6">
         <View className="w-full max-w- rounded- bg-white p-5">
           <Text className="text-center text-xl font-black">สนับสนุนผู้พัฒนา ❤️</Text>
+          <Text className="text-center text-xl font-Regular">Reminder v1.0.0</Text>
+          <Text className="text-center text-xl font-Regular">พัฒนาโดย Eakawee</Text>
+          <Text className="text-center text-xl font-Regular">ติดต่อ: eakcub@gmail.com</Text>
           <Text className="mt-1 text-center text-sm text-zinc-500">สแกน QR เพื่อ Donate ได้เลย ขอบคุณครับ</Text>
 
           <View className="mt-4 items-center rounded-2xl bg-zinc-100 p-3">
