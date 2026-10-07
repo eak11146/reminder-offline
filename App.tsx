@@ -81,13 +81,13 @@ function Main() {
           <Text className="text-3xl font-black">Reminder</Text>
            <Text className="mb-3 text-zinc-500">{todos.length} รายการ</Text>
          </View>
-         <View className="flex-row  justify-between bt-5" >
+         <View className="flex-row  justify-between"  > 
           <DonateButton onPress={()=> setDonateOpen(true)}  />
           </View>
            
          
 
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1" contentContainerStyle={{ marginTop:10, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
           {pageItems.length === 0 && <Text className="mt-10 text-center text-zinc-400">ยังไม่มีรายการ กด + เพื่อเพิ่ม</Text>}
           {pageItems.map((t:any) => (
             <TodoCard key={t.id} todo={t} onToggle={()=>toggle(t)} onEdit={()=>{ setEditing(t); setFormOpen(true); }} onDelete={()=>remove(t)} />
