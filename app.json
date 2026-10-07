@@ -1,32 +1,30 @@
 {
   "expo": {
-    "name": "Reminder Ek",
-    "slug": "reminder-ek",
+    "name": "reminder-offline",
+    "slug": "reminder-offline",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "reminder-offline",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "transparent"
+      "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": ["**/*"],
     "ios": { "supportsTablet": true },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.evo008.reminderoffline",
       "edgeToEdgeEnabled": true
     },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
-    },
     "plugins": [
-      "@react-native-community/datetimepicker",
-      "expo-notifications"
+      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#ffffff" }]
     ]
   }
 }

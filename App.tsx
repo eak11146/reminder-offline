@@ -11,6 +11,10 @@ import TodoForm from "./src/components/TodoForm";
 import DonateButton from "./src/components/DonateButton";
 import DonateModal from "./src/components/DonateModal";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { filterExpired } from "./src/lib/expire";
+
+
 function Main() {
   const insets = useSafeAreaInsets();
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -21,6 +25,22 @@ function Main() {
 
   // ใน Main เพิ่ม state
   const [donateOpen, setDonateOpen] = useState(false);
+
+
+   useEffect(() => {
+    const loadTodos = async () => {
+      const json = await AsyncStorage.getItem("todos");
+      if (!json) return;
+      let parsed: Todo[] = JSON.parse(json);
+      const cleaned = filterExpired(parsed);
+      if (cleaned.length !== parsed.length) {
+        await AsyncStorage.setItem("todos", JSON.stringify(cleaned));
+      }
+      setTodos(cleaned);
+    };
+    loadTodos();
+  }, []);
+
 
 
   useEffect(() => {
@@ -60,6 +80,8 @@ function Main() {
       setFormOpen(false);
     } catch (e: any) { Alert.alert("บันทึกไม่สำเร็จ", e.message); }
   };
+
+ 
 
   const toggle = async (t: any) => {
     await cancel(t.notifIds);

@@ -17,6 +17,10 @@ export type Todo = {
   done: boolean;
   doneAt: string | null;
   notifIds: string[];
+    // เพิ่มใหม่
+  expiredLabel?: string; // ไม่ต้อง save ก็ได้ เอาไว้โชว์
 };
 
 export type TodoInput = Omit<Todo, "id" | "done" | "doneAt" | "notifIds">;
+
+export const EXPIRE_DAYS = 15; // เพิ่มไว้ตรงนี้เลย
