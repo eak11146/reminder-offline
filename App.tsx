@@ -81,7 +81,10 @@ function Main() {
           <Text className="text-3xl font-black">Reminder</Text>
            <Text className="mb-3 text-zinc-500">{todos.length} รายการ</Text>
          </View>
-          <DonateButton onPress={()=> setDonateOpen(true)} />
+         <View className="flex-row  justify-between bt-5" >
+          <DonateButton onPress={()=> setDonateOpen(true)}  />
+          </View>
+           
          
 
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>

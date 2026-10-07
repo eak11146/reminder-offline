@@ -1,5 +1,5 @@
 import { View, Text, Pressable } from "react-native";
-import { Todo } from "../types";
+import { Todo } from "../lib/types";
 import { PRIORITY_BORDER, PRIORITY_LABEL, describe } from "../lib/format";
 
 type Props = { todo: Todo; onToggle: () => void; onEdit: () => void; onDelete: () => void };
