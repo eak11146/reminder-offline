@@ -8,6 +8,8 @@ import { cancel, schedule, setupNotifications } from "./src/lib/schedule";
 import { loadAll, saveAll } from "./src/lib/store";
 import TodoCard from "./src/components/TodoCard";
 import TodoForm from "./src/components/TodoForm";
+import DonateButton from "./src/components/DonateButton";
+import DonateModal from "./src/components/DonateModal";
 
 function Main() {
   const insets = useSafeAreaInsets();
@@ -16,6 +18,10 @@ function Main() {
   const [page, setPage] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Todo | null>(null);
+
+  // ใน Main เพิ่ม state
+  const [donateOpen, setDonateOpen] = useState(false);
+
 
   useEffect(() => {
     (async () => {
@@ -70,8 +76,13 @@ function Main() {
   return (
     <SafeAreaView className="flex-1 bg-zinc-100" edges={["top","left","right"]}>
       <View className="flex-1 px-4 pt-2">
-        <Text className="text-3xl font-black">Reminder</Text>
-        <Text className="mb-3 text-zinc-500">{todos.length} รายการ</Text>
+        
+         <View>
+          <Text className="text-3xl font-black">Reminder</Text>
+           <Text className="mb-3 text-zinc-500">{todos.length} รายการ</Text>
+         </View>
+          <DonateButton onPress={()=> setDonateOpen(true)} />
+         
 
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
           {pageItems.length === 0 && <Text className="mt-10 text-center text-zinc-400">ยังไม่มีรายการ กด + เพื่อเพิ่ม</Text>}
@@ -92,6 +103,10 @@ function Main() {
       </Pressable>
 
       <TodoForm visible={formOpen} editing={editing} onClose={()=>setFormOpen(false)} onSave={save} />
+
+        {/*   // ล่างสุดก่อนปิด SafeAreaView */}
+    <DonateModal visible={donateOpen} onClose={()=> setDonateOpen(false)} />
+
     </SafeAreaView>
   );
 }
