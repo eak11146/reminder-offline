@@ -13,8 +13,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": { "supportsTablet": true },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -24,7 +28,18 @@
       "edgeToEdgeEnabled": true
     },
     "plugins": [
-      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#ffffff" }]
-    ]
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9c8e89a7-4dfb-4b34-a8ff-c8662c44426f"
+      }
+    }
   }
 }
