@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, ScrollView, View, Text, TextInput, Pressable, Alert } from "react-native";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { Kind, Priority, Todo, TodoInput } from "../types";
+import { Kind, Priority, Todo, TodoInput } from "../lib/types";
 import {
   KINDS, KIND_LABEL, PRIORITY_BG, PRIORITY_LABEL, WEEKDAY_SHORT, fmtDateTime, hhmm,
 } from "../lib/format";
