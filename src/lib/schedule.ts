@@ -63,13 +63,34 @@ export async function schedule(t: Todo): Promise<string[]> {
         content,
         trigger: { type: T.TIME_INTERVAL, seconds: t.everyHours * 3600, repeats: true, channelId: CH },
       })];
+    
+    // ใหม่: นาที/วินาที
+    case "minutes": {
+      const mins = (t as any).everyMinutes ?? 1;
+      const seconds = Math.round(mins * 60); // 0.5 -> 30, 1.5 -> 90
+      // กันต่ำเกินไป
+      const safeSeconds = Math.max(10, seconds);
+      
+      return [await Notifications.scheduleNotificationAsync({
+        content: {
+          ...content,
+          body: t.description || `ทุก ${mins < 1 ? `${safeSeconds} วินาที` : `${mins} นาที`}`,
+        },
+        trigger: { 
+          type: T.TIME_INTERVAL, 
+          seconds: safeSeconds, 
+          repeats: true, 
+          channelId: CH 
+        },
+      })];
+    }
+
     case "daily":
       return [await Notifications.scheduleNotificationAsync({
         content,
         trigger: { type: T.DAILY, hour: t.hour, minute: t.minute, channelId: CH },
       })];
     case "weekly": {
-      // รองรับทั้งของเก่า (weekday) และของใหม่ (weekdays)
       const days = t.weekdays?.length? t.weekdays : [t.weekday];
       const ids: string[] = [];
       for (const wd of days) {
@@ -89,6 +110,8 @@ export async function schedule(t: Todo): Promise<string[]> {
           })
         )
       );
+    default:
+      return [];
   }
 }
 

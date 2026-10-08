@@ -16,13 +16,14 @@ export const PRIORITY_BORDER: Record<Priority, string> = {
   low: "border-green-500",
 };
 
-export const KINDS: Kind[] = ["once", "hours", "daily", "weekly", "monthly"];
+export const KINDS: Kind[] = ["once", "hours", "minutes", "daily", "weekly", "monthly"];
 export const KIND_LABEL: Record<Kind, string> = {
   once: "ครั้งเดียว",
-  hours: "ทุกกี่ ชม.",
+  hours: "ทุกๆ ชั่วโมง",
+  minutes: "ทุกๆ นาที/วินาที",
   daily: "ทุกวัน",
   weekly: "ทุกสัปดาห์",
-  monthly: "ทุกเดือน",
+  monthly: "ทุกเดือน"
 };
 
 export const WEEKDAY_SHORT = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -37,11 +38,45 @@ export const fmtDateTime = (iso: string) =>
   });
 
 export function describe(t: Todo): string {
+  const formatMin = (m: number) => {
+    if (m < 1) return `${Math.round(m * 60)} วิ`;
+    const min = Math.floor(m);
+    const sec = Math.round((m - min) * 60);
+    if (sec === 0) return `${min} นาที`;
+    return `${min}.${sec.toString().padStart(2, '0')} นาที`;
+  };
+
   switch (t.kind) {
-    case "once": return `ครั้งเดียว ${fmtDateTime(t.onceAt)}`;
-    case "hours": return `ทุก ${t.everyHours} ชั่วโมง`;
-    case "daily": return `ทุกวัน ${hhmm(t.hour, t.minute)}`;
-    case "weekly": return `ทุกวัน${WEEKDAY_FULL[t.weekday - 1]} ${hhmm(t.hour, t.minute)}`;
-    case "monthly": return `ทุกวันที่ ${t.monthDay} ของเดือน ${hhmm(t.hour, t.minute)}`;
+    case "once": 
+      return `ครั้งเดียว ${fmtDateTime(t.onceAt)}`;
+    
+    case "hours": 
+      return `ทุก ${t.everyHours} ชั่วโมง`;
+    
+    case "minutes": {
+      const mins = (t as any).everyMinutes ?? (t.everyHours ? t.everyHours * 60 : 1);
+      const secs = (t as any).everySeconds ?? Math.round(mins * 60);
+      // ถ้าน้อยกว่า 1 นาที โชว์เป็นวินาที
+      if (mins < 1) return `ทุก ${secs} วินาที`;
+      return `ทุก ${formatMin(mins)}`;
+    }
+    
+    case "daily": 
+      return `ทุกวัน ${hhmm(t.hour, t.minute)}`;
+    
+    case "weekly": {
+      // รองรับเลือกหลายวัน
+      const days = (t as any).weekdays?.length ? (t as any).weekdays : [t.weekday];
+      const names = days.map((d: number) => WEEKDAY_FULL[d - 1]).join(', ');
+      return `ทุกวัน${names} ${hhmm(t.hour, t.minute)}`;
+    }
+    
+    case "monthly": 
+      return t.monthDay === 99 
+        ? `ทุกวันสิ้นเดือน ${hhmm(t.hour, t.minute)}`
+        : `ทุกวันที่ ${t.monthDay} ของเดือน ${hhmm(t.hour, t.minute)}`;
+    
+    default:
+      return `แจ้งเตือน ${hhmm((t as any).hour, (t as any).minute)}`;
   }
 }

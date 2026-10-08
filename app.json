@@ -34,6 +34,16 @@
           "icon": "./assets/icon.png",
           "color": "#ffffff"
         }
+      ],
+      "expo-asset",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to save QR code to your gallery",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save QR code to your gallery",
+          "isAccessMediaLocationEnabled": false,
+          "isAudioEnabled": false
+        }
       ]
     ],
     "extra": {

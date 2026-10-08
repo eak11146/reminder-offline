@@ -1,5 +1,5 @@
 export type Priority = "high" | "medium" | "low";
-export type Kind = "once" | "hours" | "daily" | "weekly" | "monthly";
+export type Kind = "once" | "hours" | "minutes" | "daily" | "weekly" | "monthly";
 
 export type Todo = {
   id: string;
