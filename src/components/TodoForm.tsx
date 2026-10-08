@@ -1,223 +1,217 @@
 import { useEffect, useState } from "react";
-import { Modal, ScrollView, View, Text, TextInput, Pressable, Alert } from "react-native";
-import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { Kind, Priority, Todo, TodoInput } from "../lib/types";
-import { KINDS, KIND_LABEL, PRIORITY_BG, PRIORITY_LABEL, WEEKDAY_SHORT, fmtDateTime, hhmm } from "../lib/format";
+import { Modal, View, Text, TextInput, Pressable, ScrollView, Platform } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import type { Todo, TodoInput, Kind } from "../lib/types";
 
-type Props = { visible: boolean; editing: Todo | null; onClose: () => void; onSave: (input: TodoInput) => Promise<void> | void; };
-const chip = "rounded-full border px-4 py-2.5";
-
-// แปลง 0.5 -> "30 วิ", 1.5 -> "1.30 นาที"
-const formatMinLabel = (m: number) => {
-  if (m < 1) return `${m * 60} วิ`;
-  const min = Math.floor(m);
-  const sec = Math.round((m - min) * 60);
-  if (sec === 0) return `${min} นาที`;
-  return `${min}.${sec.toString().padStart(2,'0')} นาที`;
+type Props = {
+  visible: boolean;
+  editing: Todo | null;
+  onClose: () => void;
+  onSave: (input: TodoInput) => void;
 };
 
 export default function TodoForm({ visible, editing, onClose, onSave }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<Priority>("medium");
   const [kind, setKind] = useState<Kind>("once");
-  const [onceAt, setOnceAt] = useState(new Date());
-  const [everyHours, setEveryHours] = useState<number>(2);
-  const [everyMinutes, setEveryMinutes] = useState<number>(1.5); // ใหม่! 1.5 = 1.30 นาที
+  const [onceAt, setOnceAt] = useState(new Date().toISOString());
+  const [everyHours, setEveryHours] = useState(1);
+  const [everyMinutes, setEveryMinutes] = useState(1);
+  const [everySeconds, setEverySeconds] = useState(0);
   const [hour, setHour] = useState(8);
-  const [minute, setMinute] = useState(0);
-  const [weekdays, setWeekdays] = useState<number[]>([2]);
-  const [monthDay, setMonthDay] = useState<number>(1);
+  const [minute, setMinute] = useState(30);
+  const [weekdays, setWeekdays] = useState<number[]>([]);
+  const [monthDay, setMonthDay] = useState(1);
+  const [isRepeating, setIsRepeating] = useState(false);
+
+  // picker state
+  const [showDate, setShowDate] = useState(false);
+  const [showTime, setShowTime] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
   useEffect(() => {
-    if (!visible) return;
     if (editing) {
       setTitle(editing.title);
       setDescription(editing.description);
-      setPriority(editing.priority);
       setKind(editing.kind);
-      setOnceAt(new Date(editing.onceAt));
+      setOnceAt(editing.onceAt);
       setEveryHours(editing.everyHours);
-      setEveryMinutes((editing as any).everyMinutes?? 1.5);
+      const em = (editing as any).everyMinutes?? 1;
+      setEveryMinutes(Math.floor(em));
+      setEverySeconds(Math.round((em % 1) * 60));
       setHour(editing.hour);
       setMinute(editing.minute);
-      const oldDays = (editing as any).weekdays?.length? (editing as any).weekdays : [(editing as any).weekday?? 2];
-      setWeekdays(oldDays);
-      setMonthDay(editing.monthDay===99? 99 : editing.monthDay);
+      setWeekdays((editing as any).weekdays?? []);
+      setMonthDay((editing as any).monthDay?? 1);
+      setIsRepeating((editing as any).isRepeating?? false);
+      setTempDate(new Date(editing.onceAt));
     } else {
-      setTitle(""); setDescription(""); setPriority("medium"); setKind("once");
-      setOnceAt(new Date(Date.now()+60000));
-      setEveryHours(2); setEveryMinutes(1.5); setHour(8); setMinute(0);
-      setWeekdays([2]); setMonthDay(1);
+      const now = new Date(Date.now() + 60000);
+      setTitle("");
+      setDescription("");
+      setKind("once");
+      setOnceAt(now.toISOString());
+      setTempDate(now);
+      setEveryHours(1);
+      setEveryMinutes(1);
+      setEverySeconds(0);
+      setHour(8);
+      setMinute(30);
+      setWeekdays([]);
+      setMonthDay(1);
+      setIsRepeating(false);
     }
-  }, [visible, editing]);
+  }, [editing, visible]);
 
-  const toggleWeekday = (id: number) => {
-    setWeekdays(prev => prev.includes(id)? prev.filter(x=>x!==id) : [...prev, id].sort((a,b)=>a-b));
-  };
-
-  const pickTime = () => DateTimePickerAndroid.open({
-    value: new Date(2000,0,1,hour,minute), mode:"time", is24Hour:true,
-    onChange:(e,d)=>{ if(e.type==="set"&&d){ setHour(d.getHours()); setMinute(d.getMinutes()); } }
-  });
-
-  const pickOnce = () => DateTimePickerAndroid.open({
-    value: onceAt, mode:"date",
-    onChange:(e,date)=>{
-      if(e.type!=="set"||!date) return;
-      DateTimePickerAndroid.open({
-        value: date, mode:"time", is24Hour:true,
-        onChange:(e2,time)=>{
-          if(e2.type!=="set"||!time) return;
-          const merged=new Date(date); merged.setHours(time.getHours(),time.getMinutes(),0,0); setOnceAt(merged);
-        }
-      });
-    }
-  });
-
-  const submit = async () => {
-    if(!title.trim()) return Alert.alert("กรุณาใส่ชื่อ");
-    if(kind==="once"&&onceAt.getTime()<=Date.now()) return Alert.alert("เวลาผ่านไปแล้ว");
-    if(kind==="weekly"&&weekdays.length===0) return Alert.alert("เลือกอย่างน้อย 1 วัน");
-    if(kind==="hours"&&(!Number.isInteger(everyHours)||everyHours<1||everyHours>168)) return Alert.alert("จำนวนชั่วโมงไม่ถูกต้อง","1-168");
-    if(kind==="minutes"&&everyMinutes < 0.166) return Alert.alert("น้อยเกินไป","ต้องมากกว่า 10 วินาที");
-
-    await onSave({
+  const handleSave = () => {
+    if (!title.trim()) return;
+    const totalMinutes = everyMinutes + everySeconds / 60;
+    onSave({
       title: title.trim(),
-      description: description.trim(),
-      priority, kind,
-      onceAt: onceAt.toISOString(),
+      description,
+      priority: "medium",
+      kind,
+      onceAt,
       everyHours,
-      everyMinutes, // ใหม่
-      everySeconds: Math.round(everyMinutes * 60), // เผื่อเอาไปตั้ง notification
-      hour, minute,
-      weekday: weekdays[0]?? 2,
+      everyMinutes: totalMinutes || 0.5,
+      hour,
+      minute,
+      weekday: weekdays[0]?? 1,
       weekdays,
       monthDay,
-    } as TodoInput);
+      isRepeating,
+    } as any);
   };
 
-  const TimeButton = () => (
-    <Pressable className="rounded-xl bg-zinc-100 p-3" onPress={pickTime}><Text>⏰ {hhmm(hour,minute)}</Text></Pressable>
-  );
+  const onChangeOnce = (e: any, selected?: Date) => {
+    if (Platform.OS === 'android') setShowDate(false), setShowTime(false);
+    if (!selected) return;
+    setTempDate(selected);
+    setOnceAt(selected.toISOString());
+  };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <ScrollView contentContainerClassName="p-5 pt-14" keyboardShouldPersistTaps="handled">
-        <Text className="text-3xl font-black">{editing?"แก้ไขรายการ":"เพิ่มรายการ"}</Text>
+    <Modal visible={visible} animationType="slide" transparent>
+      <View className="flex-1 justify-end bg-black/50">
+        <View className="max-h-[90%] rounded-t-3xl bg-white p-5">
+          <Text className="mb-4 text-xl font-black">เพิ่มการแจ้งเตือน</Text>
 
-        <Text className="mb-1.5 mt-4 font-bold">ชื่อ</Text>
-        <TextInput className="rounded-xl bg-zinc-100 p-3" value={title} onChangeText={setTitle} placeholder="เช่น กินยา" />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <TextInput placeholder="ชื่อ" value={title} onChangeText={setTitle} className="mb-3 rounded-xl border border-zinc-200 p-3" />
+            <TextInput placeholder="รายละเอียด" value={description} onChangeText={setDescription} className="mb-4 rounded-xl border border-zinc-200 p-3" />
 
-        <Text className="mb-1.5 mt-4 font-bold">รายละเอียด</Text>
-        <TextInput className="h-20 rounded-xl bg-zinc-100 p-3" style={{textAlignVertical:"top"}} value={description} onChangeText={setDescription} multiline placeholder="รายละเอียดเพิ่มเติม" />
-
-        <Text className="mb-1.5 mt-4 font-bold">ความสำคัญ</Text>
-        <View className="flex-row gap-2">
-          {(["high","medium","low"] as Priority[]).map(p=>(
-            <Pressable key={p} onPress={()=>setPriority(p)} className={`${chip} ${priority===p?PRIORITY_BG[p]:"border-zinc-300"}`}>
-              <Text className={`font-bold ${priority===p?"text-white":"text-black"}`}>{PRIORITY_LABEL[p]}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text className="mb-1.5 mt-4 font-bold">การแจ้งเตือน</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {KINDS.map(k=>(
-            <Pressable key={k} onPress={()=>setKind(k)} className={`${chip} ${kind===k?"border-black bg-black":"border-zinc-300"}`}>
-              <Text className={`font-bold ${kind===k?"text-white":"text-black"}`}>{KIND_LABEL[k]}</Text>
-            </Pressable>
-          ))}
-          {/* เพิ่ม chip นาที ถ้า KINDS คุณยังไม่มี */}
-          {!KINDS.includes("minutes" as any) && (
-            <Pressable onPress={()=>setKind("minutes" as Kind)} className={`${chip} ${kind==="minutes"?"border-black bg-black":"border-zinc-300"}`}>
-              <Text className={`font-bold ${kind==="minutes"?"text-white":"text-black"}`}>ทุกๆ นาที/วินาที</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {kind==="once"&&<><Text className="mb-1.5 mt-4 font-bold">วันและเวลา</Text><Pressable className="rounded-xl bg-zinc-100 p-3" onPress={pickOnce}><Text>📅 {fmtDateTime(onceAt.toISOString())}</Text></Pressable></>}
-
-        {kind==="hours"&&(
-          <>
-            <Text className="mb-1.5 mt-4 font-bold">เตือนทุกกี่ชั่วโมง</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {[1,2,3,4,6,8,12,24].map(h => (
-                <Pressable key={h} onPress={()=>setEveryHours(h)} className={`rounded-full border px-4 py-2.5 ${everyHours===h?"border-black bg-black":"border-zinc-300"}`}>
-                  <Text className={`font-bold ${everyHours===h?"text-white":"text-black"}`}>{h} ชม.</Text>
-                </Pressable>
-              ))}
+            <Text className="mb-2 font-bold">รูปแบบการเตือน</Text>
+            <View className="mb-4 flex-row gap-2">
+              <Pressable onPress={()=>setIsRepeating(false)} className={`flex-1 rounded-xl border p-3 ${!isRepeating?"bg-black border-black":"border-zinc-300 bg-white"}`}>
+                <Text className={`text-center font-bold ${!isRepeating?"text-white":"text-black"}`}>🔔 ครั้งเดียว</Text>
+              </Pressable>
+              <Pressable onPress={()=>setIsRepeating(true)} className={`flex-1 rounded-xl border p-3 ${isRepeating?"bg-black border-black":"border-zinc-300 bg-white"}`}>
+                <Text className={`text-center font-bold ${isRepeating?"text-white":"text-black"}`}>🔁 วนซ้ำ</Text>
+              </Pressable>
             </View>
-          </>
-        )}
 
-        {/* ใหม่: โหมดนาที/วินาที */}
-        {kind==="minutes"&&(
-          <>
-            <Text className="mb-1.5 mt-4 font-bold">เตือนทุกกี่นาที</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {[0.166, 0.5, 1, 1.5, 2, 3, 5, 10, 15, 30].map(m => (
-                <Pressable key={m} onPress={()=>setEveryMinutes(m)} className={`rounded-full border px-4 py-2.5 ${everyMinutes===m?"border-black bg-black":"border-zinc-300"}`}>
-                  <Text className={`font-bold ${everyMinutes===m?"text-white":"text-black"}`}>
-                    {formatMinLabel(m)}
-                  </Text>
+            <View className="mb-4 flex-row flex-wrap gap-2">
+              {(["once","minutes","hours","daily","monthly"] as Kind[]).map(k => (
+                <Pressable key={k} onPress={()=>setKind(k)} className={`rounded-full border px-3 py-2 ${kind===k?"bg-black border-black":"border-zinc-300"}`}>
+                  <Text className={kind===k?"text-white":"text-black"}>{k}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <View className="mt-3 flex-row items-center gap-3">
-              <Pressable onPress={()=>setEveryMinutes(Math.max(0.166, +(everyMinutes-0.5).toFixed(2)))} className="h-12 w-12 items-center justify-center rounded-xl bg-zinc-200"><Text className="text-xl font-black">-</Text></Pressable>
-              <View className="flex-1 items-center rounded-xl bg-zinc-100 p-3">
-                <Text className="text-lg font-bold">{formatMinLabel(everyMinutes)} • {Math.round(everyMinutes*60)} วิ</Text>
-              </View>
-              <Pressable onPress={()=>setEveryMinutes(+(everyMinutes+0.5).toFixed(2))} className="h-12 w-12 items-center justify-center rounded-xl bg-zinc-200"><Text className="text-xl font-black">+</Text></Pressable>
-            </View>
-            <Text className="mt-2 text-xs text-zinc-500">เช่น 0.30 นาที = 30 วิ, 1.30 นาที = 90 วิ • เริ่มนับจากตอนบันทึก</Text>
-          </>
-        )}
-
-        {kind==="daily"&&<><Text className="mb-1.5 mt-4 font-bold">เวลาทุกวัน</Text><TimeButton/></>}
-
-        {kind==="weekly"&&(
-          <>
-            <Text className="mb-1.5 mt-4 font-bold">เลือกได้หลายวัน ({weekdays.length} วัน)</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {WEEKDAY_SHORT.map((w,i)=>{
-                const id=i+1; const active=weekdays.includes(id);
-                return (
-                  <Pressable key={w} onPress={()=>toggleWeekday(id)} className={`h-11 w-11 items-center justify-center rounded-full border ${active?"border-black bg-black":"border-zinc-300"}`}>
-                    <Text className={`font-bold ${active?"text-white":"text-black"}`}>{w}</Text>
+            {/* ONCE ใช้ DateTimePicker จริง */}
+            {kind==="once" && (
+              <View className="mb-4 rounded-2xl bg-zinc-50 p-3">
+                <Text className="mb-2 font-bold">📅 เลือกวัน เวลา (ครั้งเดียว)</Text>
+                <View className="flex-row gap-2">
+                  <Pressable onPress={()=>setShowDate(true)} className="flex-1 rounded-xl bg-black p-4">
+                    <Text className="text-center font-bold text-white">📅 {tempDate.toLocaleDateString('th-TH')}</Text>
                   </Pressable>
-                );
-              })}
-            </View>
-            <Text className="mb-1.5 mt-4 font-bold">เวลา</Text><TimeButton/>
-          </>
-        )}
+                  <Pressable onPress={()=>setShowTime(true)} className="flex-1 rounded-xl bg-black p-4">
+                    <Text className="text-center font-bold text-white">⏰ {tempDate.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</Text>
+                  </Pressable>
+                </View>
+                {showDate && (
+                  <DateTimePicker value={tempDate} mode="date" display="default" onChange={onChangeOnce} />
+                )}
+                {showTime && (
+                  <DateTimePicker value={tempDate} mode="time" display="default" is24Hour onChange={onChangeOnce} />
+                )}
+              </View>
+            )}
 
-        {kind==="monthly"&&(
-          <>
-            <Text className="mb-1.5 mt-4 font-bold">เลือกวันที่</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {Array.from({length:31},(_,i)=>i+1).map(d=>(
-                <Pressable key={d} onPress={()=>setMonthDay(d)} className={`h-11 w-11 items-center justify-center rounded-full border ${monthDay===d?"border-black bg-black":"border-zinc-300"}`}>
-                  <Text className={`font-bold ${monthDay===d?"text-white":"text-black"}`}>{d}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <Pressable onPress={()=>setMonthDay(99)} className={`mt-2 rounded-full border px-4 py-2.5 ${monthDay===99?"border-black bg-black":"border-zinc-300"}`}>
-              <Text className={`font-bold ${monthDay===99?"text-white":"text-black"}`}>วันสิ้นเดือน</Text>
-            </Pressable>
-            <Text className="mb-1.5 mt-4 font-bold">เวลา</Text><TimeButton/>
-          </>
-        )}
+            {/* MINUTES = เลือก นาที + วินาที ด้วย picker */}
+            {kind==="minutes" && (
+              <View className="mb-4 rounded-2xl bg-zinc-50 p-3">
+                <Text className="mb-2 font-bold">⏱️ ทุกๆกี่นาที</Text>
+                <View className="flex-row gap-2">
+                  <View className="flex-1">
+                    <Text className="mb-1 text-center text-xs">นาที</Text>
+                    <View className="flex-row items-center">
+                      <Pressable onPress={()=>setEveryMinutes(m=>Math.max(0,m-1))} className="h-12 w-12 items-center justify-center rounded-xl border bg-white"><Text className="text-xl">-</Text></Pressable>
+                      <View className="mx-1 h-12 flex-1 items-center justify-center rounded-xl bg-black"><Text className="font-black text-white">{everyMinutes}</Text></View>
+                      <Pressable onPress={()=>setEveryMinutes(m=>m+1)} className="h-12 w-12 items-center justify-center rounded-xl border bg-white"><Text className="text-xl">+</Text></Pressable>
+                    </View>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="mb-1 text-center text-xs">วินาที</Text>
+                    <View className="flex-row items-center">
+                      <Pressable onPress={()=>setEverySeconds(s=>Math.max(0,s-5))} className="h-12 w-12 items-center justify-center rounded-xl border bg-white"><Text className="text-xl">-</Text></Pressable>
+                      <View className="mx-1 h-12 flex-1 items-center justify-center rounded-xl bg-black"><Text className="font-black text-white">{everySeconds}</Text></View>
+                      <Pressable onPress={()=>setEverySeconds(s=>Math.min(55,s+5))} className="h-12 w-12 items-center justify-center rounded-xl border bg-white"><Text className="text-xl">+</Text></Pressable>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
 
-        <View className="mt-6 flex-row gap-2">
-          <Pressable className="flex-1 items-center rounded-xl bg-zinc-400 p-3.5" onPress={onClose}><Text className="font-bold text-white">ยกเลิก</Text></Pressable>
-          <Pressable className="flex-1 items-center rounded-xl bg-black p-3.5" onPress={submit}><Text className="font-bold text-white">บันทึก</Text></Pressable>
+            {/* HOURS = -[ 1>=24 ]+ */}
+            {kind==="hours" && (
+              <View className="mb-4 rounded-2xl bg-zinc-50 p-3">
+                <Text className="mb-2 font-bold">⏰ ทุกๆกี่ชั่วโมง (1-24)</Text>
+                <View className="flex-row items-center justify-center gap-3">
+                  <Pressable onPress={()=>setEveryHours(h=>Math.max(1,h-1))} className="h-14 w-14 items-center justify-center rounded-xl border bg-white"><Text className="text-2xl font-black">-</Text></Pressable>
+                  <View className="h-14 w-24 items-center justify-center rounded-xl bg-black"><Text className="text-xl font-black text-white">{everyHours}</Text></View>
+                  <Pressable onPress={()=>setEveryHours(h=>Math.min(24,h+1))} className="h-14 w-14 items-center justify-center rounded-xl border bg-white"><Text className="text-2xl font-black">+</Text></Pressable>
+                </View>
+              </View>
+            )}
+
+            {kind==="daily" && (
+               <View className="mb-4">
+                  <Text className="mb-2 font-bold">เลือกวัน จ-อา</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {[{id:1,label:"จ"},{id:2,label:"อ"},{id:3,label:"พ"},{id:4,label:"พฤ"},{id:5,label:"ศ"},{id:6,label:"ส"},{id:0,label:"อา"}].map(d => {
+                      const active = weekdays.includes(d.id);
+                      return (
+                        <Pressable key={d.id} onPress={()=>setWeekdays(prev => prev.includes(d.id)? prev.filter(x=>x!==d.id) : [...prev, d.id])} className={`h-10 w-10 items-center justify-center rounded-full border ${active?"bg-black border-black":"border-zinc-300"}`}>
+                          <Text className={`font-bold ${active?"text-white":"text-black"}`}>{d.label}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+            )}
+
+            {kind==="monthly" && (
+              <View className="mb-4">
+                <Text className="mb-2 font-bold">ทุกวันที่</Text>
+                <View className="flex-row items-center gap-2">
+                  <Pressable onPress={()=>setMonthDay(d=> d===99?31:Math.max(1,d-1))} className="h-12 w-12 items-center justify-center rounded-xl border bg-white"><Text className="text-xl">-</Text></Pressable>
+                  <View className="h-12 flex-1 items-center justify-center rounded-xl bg-black"><Text className="text-white font-black">{monthDay===99?"สิ้นเดือน":`วันที่ ${monthDay}`}</Text></View>
+                  <Pressable onPress={()=>setMonthDay(d=> d===99?1:Math.min(31,d+1))} className="h-12 w-12 items-center justify-center rounded-xl border bg-white"><Text className="text-xl">+</Text></Pressable>
+                  <Pressable onPress={()=>setMonthDay(99)} className={`h-12 px-4 rounded-xl border ${monthDay===99?"bg-black":"bg-white"}`}><Text className={monthDay===99?"text-white":"text-black"}>สิ้นเดือน</Text></Pressable>
+                </View>
+              </View>
+            )}
+
+          </ScrollView>
+
+          <View className="mt-4 flex-row gap-2">
+            <Pressable onPress={onClose} className="flex-1 rounded-xl bg-zinc-200 p-4"><Text className="text-center font-bold">ยกเลิก</Text></Pressable>
+            <Pressable onPress={handleSave} className="flex-1 rounded-xl bg-blue-600 p-4"><Text className="text-center font-bold text-white">บันทึก</Text></Pressable>
+          </View>
         </View>
-        <View className="h-10" />
-      </ScrollView>
+      </View>
     </Modal>
   );
 }

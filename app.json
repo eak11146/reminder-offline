@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "reminder-offline",
-    "slug": "reminder-offline",
+    "name": "จำแทนให้",
+    "slug": "jam-tan-hai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "reminder-offline",
+    "scheme": "jam-tan-hai",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {

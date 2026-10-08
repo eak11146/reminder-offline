@@ -7,20 +7,45 @@ export type Todo = {
   description: string;
   priority: Priority;
   kind: Kind;
-  onceAt: string;     // ISO ใช้กับ "ครั้งเดียว"
-  everyHours: number; // ใช้กับ "ทุกกี่ชม."
-  hour: number;       // ใช้กับ ทุกวัน / ทุกสัปดาห์ / ทุกเดือน
+
+  onceAt: string;
+  everyHours: number;
+  everyMinutes?: number; // ใหม่ 0.5 = 30วิ
+  everySeconds?: number;
+  hour: number;
   minute: number;
-  weekday: number;    // 1=อา ... 7=ส (ทุกสัปดาห์)
-  weekdays: number[]; // ใช้ใหม่ ติ๊กได้หลายวัน
-  monthDay: number;   // 1-31 (ทุกเดือน)
+  weekday: number;
+  weekdays: number[];
+  monthDay: number;
+
+    // ใหม่: ระบบครั้งเดียว vs วนซ้ำ
+  isRepeating: boolean;
+  autoDeleteAt?: string; // วันลบอัตโนมัติ
+
+  createdAt: string;
+  updatedAt: string;
   done: boolean;
-  doneAt: string | null;
-  notifIds: string[];
+  notificationIds?: string[];
     // เพิ่มใหม่
   expiredLabel?: string; // ไม่ต้อง save ก็ได้ เอาไว้โชว์
 };
 
-export type TodoInput = Omit<Todo, "id" | "done" | "doneAt" | "notifIds">;
+export type TodoInput = {
+  title: string;
+  description: string;
+  priority: Priority;
+  kind: Kind;
+  onceAt: string;
+  everyHours: number;
+  everyMinutes?: number;
+  everySeconds?: number;
+  hour: number;
+  minute: number;
+  weekday: number;
+  weekdays: number[];
+  monthDay: number;
+  isRepeating: boolean;
+  autoDeleteAt?: string;
+};
 
-export const EXPIRE_DAYS = 15; // เพิ่มไว้ตรงนี้เลย
+export const EXPIRE_DAYS = 7; // เพิ่มไว้ตรงนี้เลย expire info จะได้ใช้ตรงนี้
