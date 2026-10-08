@@ -6,12 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "jam-tan-hai",
-    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFF9E6"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -22,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FFF9E6"
       },
       "package": "com.evo008.reminderoffline",
       "edgeToEdgeEnabled": true
